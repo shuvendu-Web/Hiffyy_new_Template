@@ -1,0 +1,259 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "HIFFYY luxury perfume product definition with fragrance notes and variants",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string", "maxLength": 200 },
+        "slug": { "type": "string", "maxLength": 200 },
+        "sku": { "type": "string", "maxLength": 100 },
+        "fragranceFamily": { "type": "string", "maxLength": 100 },
+        "topNotes": { "type": "string", "maxLength": 300 },
+        "heartNotes": { "type": "string", "maxLength": 300 },
+        "baseNotes": { "type": "string", "maxLength": 300 },
+        "description": { "type": "string", "maxLength": 5000 },
+        "status": { "type": "string", "enum": ["active", "draft", "archived"] },
+        "sellingPrice": { "type": "number" },
+        "compareAtPrice": { "type": "number" },
+        "costPrice": { "type": "number" },
+        "stockOnHand": { "type": "number" },
+        "stockReserved": { "type": "number" },
+        "availableStock": { "type": "number" },
+        "images": { "type": "array" },
+        "variants": { "type": "array" },
+        "isBestseller": { "type": "boolean" },
+        "isNewArrival": { "type": "boolean" },
+        "rating": { "type": "number" },
+        "reviewCount": { "type": "number" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["title", "slug", "sku", "fragranceFamily", "sellingPrice", "status"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Omnichannel unified order from website, POS, or marketplaces",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "orderNumber": { "type": "string", "maxLength": 50 },
+        "channel": { "type": "string", "enum": ["website", "pos", "amazon", "flipkart", "meesho"] },
+        "status": { "type": "string", "enum": ["pending_payment", "confirmed", "processing", "packed", "shipped", "delivered", "cancelled", "return_requested", "returned", "partially_refunded", "refunded"] },
+        "customer": { "type": "object" },
+        "items": { "type": "array" },
+        "subtotal": { "type": "number" },
+        "discount": { "type": "number" },
+        "tax": { "type": "number" },
+        "shippingFee": { "type": "number" },
+        "total": { "type": "number" },
+        "paymentMethod": { "type": "string", "maxLength": 50 },
+        "paymentStatus": { "type": "string", "enum": ["pending", "paid", "failed", "refunded"] },
+        "shippingAddress": { "type": "object" },
+        "trackingNumber": { "type": "string", "maxLength": 100 },
+        "sourceStore": { "type": "string", "maxLength": 100 },
+        "notes": { "type": "string", "maxLength": 2000 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["orderNumber", "channel", "status", "items", "total", "paymentStatus"]
+    },
+    "InventoryMovement": {
+      "title": "InventoryMovement",
+      "description": "Immutable ledger entry for stock adjustment, sale, receipt, transfer, or return",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "sku": { "type": "string", "maxLength": 100 },
+        "productTitle": { "type": "string", "maxLength": 200 },
+        "type": { "type": "string", "enum": ["sale", "restock", "adjustment", "transfer", "damage", "return"] },
+        "delta": { "type": "number" },
+        "reason": { "type": "string", "maxLength": 500 },
+        "warehouseId": { "type": "string", "maxLength": 100 },
+        "performedBy": { "type": "string", "maxLength": 100 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["sku", "type", "delta", "reason", "createdAt"]
+    },
+    "SalesChannel": {
+      "title": "SalesChannel",
+      "description": "Configuration and sync status for DTC website, POS, and online marketplaces",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string", "maxLength": 100 },
+        "type": { "type": "string", "enum": ["website", "pos", "amazon", "flipkart", "meesho", "custom"] },
+        "status": { "type": "string", "enum": ["active", "pending_setup", "error", "paused"] },
+        "sellerId": { "type": "string", "maxLength": 100 },
+        "apiKeyConfigured": { "type": "boolean" },
+        "warehouseMapping": { "type": "string", "maxLength": 100 },
+        "syncInventory": { "type": "boolean" },
+        "syncOrders": { "type": "boolean" },
+        "lastSyncAt": { "type": "string" },
+        "lastError": { "type": "string", "maxLength": 500 },
+        "totalOrders": { "type": "number" },
+        "totalGrossSales": { "type": "number" }
+      },
+      "required": ["name", "type", "status"]
+    },
+    "CmsPage": {
+      "title": "CmsPage",
+      "description": "Dynamic website page with customizable sections and SEO metadata",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "slug": { "type": "string", "maxLength": 100 },
+        "title": { "type": "string", "maxLength": 200 },
+        "template": { "type": "string", "maxLength": 50 },
+        "status": { "type": "string", "enum": ["published", "draft", "scheduled"] },
+        "sections": { "type": "array" },
+        "seoTitle": { "type": "string", "maxLength": 150 },
+        "metaDescription": { "type": "string", "maxLength": 300 },
+        "ogImage": { "type": "string", "maxLength": 500 },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["slug", "title", "status"]
+    },
+    "MediaItem": {
+      "title": "MediaItem",
+      "description": "Promotional carousel media, YouTube videos, Instagram reels, and banners",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string", "enum": ["youtube", "instagram", "image_banner"] },
+        "title": { "type": "string", "maxLength": 200 },
+        "caption": { "type": "string", "maxLength": 500 },
+        "mediaUrl": { "type": "string", "maxLength": 1000 },
+        "embedId": { "type": "string", "maxLength": 200 },
+        "thumbnailUrl": { "type": "string", "maxLength": 1000 },
+        "ctaLabel": { "type": "string", "maxLength": 100 },
+        "ctaLink": { "type": "string", "maxLength": 500 },
+        "displayOrder": { "type": "number" },
+        "isActive": { "type": "boolean" },
+        "placement": { "type": "string", "enum": ["homepage_carousel", "brand_story", "campaign"] }
+      },
+      "required": ["type", "title", "isActive"]
+    },
+    "BlogPost": {
+      "title": "BlogPost",
+      "description": "Editorial fragrance articles and olfactory guide",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string", "maxLength": 250 },
+        "slug": { "type": "string", "maxLength": 250 },
+        "category": { "type": "string", "maxLength": 100 },
+        "excerpt": { "type": "string", "maxLength": 500 },
+        "content": { "type": "string", "maxLength": 20000 },
+        "featuredImage": { "type": "string", "maxLength": 1000 },
+        "author": { "type": "string", "maxLength": 100 },
+        "youtubeUrl": { "type": "string", "maxLength": 500 },
+        "status": { "type": "string", "enum": ["published", "draft"] },
+        "publishedAt": { "type": "string" },
+        "readTime": { "type": "string", "maxLength": 20 }
+      },
+      "required": ["title", "slug", "status", "category"]
+    },
+    "Customer": {
+      "title": "Customer",
+      "description": "Store customer record with order statistics and contact details",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string", "maxLength": 150 },
+        "email": { "type": "string", "maxLength": 150 },
+        "phone": { "type": "string", "maxLength": 30 },
+        "city": { "type": "string", "maxLength": 100 },
+        "totalOrders": { "type": "number" },
+        "totalSpent": { "type": "number" },
+        "tags": { "type": "array" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["name", "createdAt"]
+    },
+    "KnowledgeDoc": {
+      "title": "KnowledgeDoc",
+      "description": "Document chunk for RAG customer concierge grounding",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string", "maxLength": 200 },
+        "category": { "type": "string", "enum": ["faq", "policy", "fragrance_guide", "product_care", "shipping"] },
+        "content": { "type": "string", "maxLength": 5000 },
+        "isActive": { "type": "boolean" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["title", "category", "content", "isActive"]
+    },
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "Authorized administrators and staff role mappings",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "maxLength": 150 },
+        "displayName": { "type": "string", "maxLength": 150 },
+        "role": { "type": "string", "enum": ["super_admin", "admin", "catalog_manager", "pos_cashier", "support_agent"] },
+        "permissions": { "type": "array" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["email", "role"]
+    },
+    "ConnectionTest": {
+      "title": "ConnectionTest",
+      "description": "Firestore health check document",
+      "type": "object",
+      "properties": {
+        "status": { "type": "string" },
+        "testedAt": { "type": "string" }
+      }
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "HIFFYY catalog perfume products"
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Omnichannel customer and POS orders"
+    },
+    "/inventory_movements/{movementId}": {
+      "schema": "InventoryMovement",
+      "description": "Audit trail of all inventory events"
+    },
+    "/sales_channels/{channelId}": {
+      "schema": "SalesChannel",
+      "description": "Omnichannel marketplace and POS integrations"
+    },
+    "/cms_pages/{pageId}": {
+      "schema": "CmsPage",
+      "description": "Dynamic CMS storefront pages"
+    },
+    "/media_items/{mediaId}": {
+      "schema": "MediaItem",
+      "description": "Homepage video carousel, YouTube, and campaign banners"
+    },
+    "/blog_posts/{postId}": {
+      "schema": "BlogPost",
+      "description": "Fragrance education and editorial journal"
+    },
+    "/customers/{customerId}": {
+      "schema": "Customer",
+      "description": "Customer profiles and order metrics"
+    },
+    "/knowledge_docs/{docId}": {
+      "schema": "KnowledgeDoc",
+      "description": "Support knowledge base documents for RAG chatbot"
+    },
+    "/admins/{uid}": {
+      "schema": "AdminUser",
+      "description": "Privileged staff accounts with RBAC"
+    },
+    "/test/{testId}": {
+      "schema": "ConnectionTest",
+      "description": "Database connection verification test"
+    }
+  }
+}

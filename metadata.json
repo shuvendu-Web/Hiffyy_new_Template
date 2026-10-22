@@ -1,0 +1,6 @@
+{
+  "name": "HIFFYY COMMERCE OS",
+  "description": "Production-grade luxury fragrance e-commerce, omnichannel inventory, POS, CMS, and AI platform for HIFFYY.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

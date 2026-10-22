@@ -1,0 +1,99 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net: Default-deny all unspecified operations
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isBootstrappedAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'shuvendu.dhenki@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Connection test document
+    match /test/{testId} {
+      allow read: if true;
+      allow write: if isBootstrappedAdmin();
+    }
+
+    // Products collection: Public read for storefront; admin write
+    match /products/{productId} {
+      allow read: if isValidId(productId);
+      allow create, update, delete: if isBootstrappedAdmin();
+    }
+
+    // Orders: Anyone can create a valid order (guest checkout & authenticated);
+    // Customers can read their own order; Admins can read/update all
+    match /orders/{orderId} {
+      allow read: if isValidId(orderId) && (
+        isBootstrappedAdmin() ||
+        (isSignedIn() && resource.data.customer.uid == request.auth.uid)
+      );
+      allow create: if isValidId(orderId) &&
+        request.resource.data.orderNumber is string &&
+        request.resource.data.orderNumber.size() <= 50 &&
+        request.resource.data.total is number &&
+        request.resource.data.items is list &&
+        request.resource.data.items.size() <= 50;
+      allow update, delete: if isBootstrappedAdmin();
+    }
+
+    // Inventory Movements: Admin only
+    match /inventory_movements/{movementId} {
+      allow read, write: if isBootstrappedAdmin();
+    }
+
+    // Sales Channels: Admin only
+    match /sales_channels/{channelId} {
+      allow read, write: if isBootstrappedAdmin();
+    }
+
+    // CMS Pages: Public read; Admin write
+    match /cms_pages/{pageId} {
+      allow read: if isValidId(pageId);
+      allow write: if isBootstrappedAdmin();
+    }
+
+    // Media Items (Homepage Carousels, Video Embeds, Campaigns): Public read; Admin write
+    match /media_items/{mediaId} {
+      allow read: if isValidId(mediaId);
+      allow write: if isBootstrappedAdmin();
+    }
+
+    // Blog Posts: Public read; Admin write
+    match /blog_posts/{postId} {
+      allow read: if isValidId(postId);
+      allow write: if isBootstrappedAdmin();
+    }
+
+    // Customers: Owner read/write; Admin full access
+    match /customers/{customerId} {
+      allow read, write: if isBootstrappedAdmin() || (isSignedIn() && request.auth.uid == customerId);
+    }
+
+    // Knowledge Docs for RAG: Public read for storefront concierge; Admin write
+    match /knowledge_docs/{docId} {
+      allow read: if isValidId(docId);
+      allow write: if isBootstrappedAdmin();
+    }
+
+    // Admins registry: Admin read/write
+    match /admins/{uid} {
+      allow read: if isSignedIn();
+      allow write: if isBootstrappedAdmin();
+    }
+  }
+}

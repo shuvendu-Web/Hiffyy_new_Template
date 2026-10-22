@@ -1,0 +1,103 @@
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Oswald", sans-serif;
+  --font-heading: "Oswald", sans-serif;
+  --font-oswald: "Oswald", sans-serif;
+}
+
+
+@layer base {
+  :root {
+    /* Main Brand Palette (60% Sage #A0B7A3, 20% Electric Botanical Lime #96F816) */
+    --color-sage: #A0B7A3;
+    --color-sage-dark: #8BA68F;
+    --color-sage-light: #B8CDBA;
+    --color-sage-muted: #D3DFD4;
+    --color-sage-canvas: #EBF2EC;
+
+    --color-lime: #96F816;
+    --color-lime-glow: rgba(150, 248, 22, 0.4);
+    --color-lime-dark: #79CC0E;
+
+    --forest-deep: #12231A;
+    --forest-card: #182F23;
+    --charcoal-ink: #12231A;
+    --charcoal-soft: #38453D;
+    --border-editorial: #A0B7A3;
+  }
+
+  body {
+    background-color: #F8FAF7;
+    background-image: radial-gradient(rgba(150, 173, 153, 0.4) 1.5px, transparent 1.5px);
+    background-size: 24px 24px;
+    background-attachment: fixed;
+    color: var(--charcoal-ink);
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* All headlines use Oswald */
+  h1, h2, h3, h4, h5, h6, .font-serif, .font-heading, [class*="oswald"] {
+    font-family: "Oswald", sans-serif;
+    font-optical-sizing: auto;
+    font-style: normal;
+  }
+}
+
+.oswald,
+.font-oswald {
+  font-family: "Oswald", sans-serif !important;
+  font-optical-sizing: auto;
+  font-style: normal;
+}
+
+
+/* Custom luxury scrollbar with #A0B7A3 and #96F816 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #EBF2EC;
+}
+::-webkit-scrollbar-thumb {
+  background: #A0B7A3;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #96F816;
+}
+
+@keyframes fadeInSlide {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-slide {
+  animation: fadeInSlide 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Smooth On-Visible Scroll Reveal Styles */
+.reveal-section {
+  will-change: opacity, transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-section,
+  .animate-fade-in-slide {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+
