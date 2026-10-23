@@ -146,10 +146,8 @@ const MainContent: React.FC = () => {
           <SocialVideoCarousel />
         </RevealSection>
 
-        {/* Featured Fragrance Collections */}
-        <RevealSection direction="up" delay={50} duration={800}>
-          <FeaturedProducts onOpenCart={() => setIsCartOpen(true)} />
-        </RevealSection>
+        {/* Featured Fragrance Collections (Artisanal Perfume Wardrobe) */}
+        <FeaturedProducts onOpenCart={() => setIsCartOpen(true)} />
 
         {/* Olfactory Notes Pyramid Architecture */}
         <RevealSection direction="up" delay={50} duration={850}>

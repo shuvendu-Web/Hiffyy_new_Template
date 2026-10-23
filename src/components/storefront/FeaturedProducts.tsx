@@ -39,32 +39,32 @@ export const FeaturedProducts: React.FC<FeaturedProductsProps> = ({ onOpenCart }
   });
 
   return (
-    <section id="collection" className="py-20 bg-[#EBF2EC] transition-colors">
+    <section id="collection" className="scroll-mt-16 sm:scroll-mt-20 py-12 sm:py-16 lg:py-20 bg-[#EBF2EC] transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="text-center max-w-2xl mx-auto mb-12">
-          <div className="inline-flex items-center gap-1.5 text-[10px] tracking-[0.25em] uppercase font-bold text-[#12231A] mb-2 px-3 py-1 bg-white/60 rounded-full border border-[#A0B7A3]/40">
+        <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-12">
+          <div className="inline-flex items-center gap-1.5 text-[10px] sm:text-xs tracking-[0.25em] uppercase font-bold text-[#12231A] mb-2 px-3.5 py-1 bg-white/70 backdrop-blur-xs rounded-full border border-[#A0B7A3]/50 shadow-xs">
             <Sparkles className="w-3.5 h-3.5 text-[#96F816] fill-[#96F816]" />
             <span>Artisanal Perfume Wardrobe</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl font-serif text-[#12231A] font-extrabold mb-4">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif text-[#12231A] font-extrabold mb-3">
             The Haute Parfumerie Flacons
           </h2>
-          <p className="text-xs sm:text-sm text-[#12231A]/80 font-light leading-relaxed">
+          <p className="text-xs sm:text-sm text-[#12231A]/80 font-light leading-relaxed max-w-xl mx-auto">
             Distilled from royal Indian botanicals, rare resins, and natural floral absolutes.
             Each composition is macerated in wooden casks for sixty days to achieve timeless sillage.
           </p>
         </div>
 
         {/* Filter Pills & Sort Bar */}
-        <div className="flex flex-col md:flex-row items-center justify-between pb-6 mb-8 border-b border-[#A0B7A3]/40 gap-4">
-          {/* Family Filters */}
-          <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between pb-5 mb-8 border-b border-[#A0B7A3]/40 gap-4">
+          {/* Family Filters: Touch-scrollable on mobile, flex-wrap on tablet/desktop */}
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-1 md:pb-0 scroll-smooth -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
             {families.map((fam) => (
               <button
                 key={fam.id}
                 onClick={() => setActiveFamily(fam.id)}
-                className={`px-3.5 py-1.5 text-xs tracking-wider uppercase font-bold transition-all cursor-pointer rounded-full ${
+                className={`px-3.5 py-1.5 text-[11px] sm:text-xs tracking-wider uppercase font-bold transition-all cursor-pointer rounded-full shrink-0 ${
                   activeFamily === fam.id
                     ? 'bg-[#12231A] text-[#96F816] shadow-md border-2 border-[#96F816]'
                     : 'bg-white/90 border border-[#A0B7A3]/60 text-[#12231A] hover:border-[#96F816]'
@@ -76,9 +76,9 @@ export const FeaturedProducts: React.FC<FeaturedProductsProps> = ({ onOpenCart }
           </div>
 
           {/* Sort & Count */}
-          <div className="flex items-center space-x-3 text-xs text-[#12231A]/70">
+          <div className="flex items-center justify-between sm:justify-end gap-3 text-xs text-[#12231A]/70 shrink-0">
             <span className="text-[11px] font-mono font-bold">{sorted.length} Creations</span>
-            <div className="flex items-center gap-1.5 bg-white border border-[#A0B7A3]/50 px-2.5 py-1 rounded-sm">
+            <div className="flex items-center gap-1.5 bg-white border border-[#A0B7A3]/50 px-2.5 py-1 rounded-sm shadow-xs">
               <SlidersHorizontal className="w-3.5 h-3.5 text-[#C5A880]" />
               <select
                 value={sortBy}
@@ -95,18 +95,31 @@ export const FeaturedProducts: React.FC<FeaturedProductsProps> = ({ onOpenCart }
         </div>
 
         {/* Product Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {sorted.map((product, idx) => (
-            <RevealSection
-              key={product.id}
-              direction="up"
-              delay={Math.min(idx * 75, 450)}
-              duration={700}
+        {sorted.length === 0 ? (
+          <div className="text-center py-16 bg-white/60 rounded-2xl border border-[#A0B7A3]/40">
+            <p className="text-sm font-semibold text-[#12231A] mb-2">No creations found in this fragrance family.</p>
+            <button
+              onClick={() => setActiveFamily('all')}
+              className="px-4 py-2 bg-[#12231A] text-[#96F816] text-xs uppercase font-bold tracking-wider rounded-full hover:bg-black transition-colors cursor-pointer"
             >
-              <ProductCard product={product} onOpenCart={onOpenCart} />
-            </RevealSection>
-          ))}
-        </div>
+              View All Creations
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+            {sorted.map((product, idx) => (
+              <RevealSection
+                key={product.id}
+                direction="up"
+                delay={Math.min(idx * 50, 300)}
+                duration={500}
+                threshold={0.02}
+              >
+                <ProductCard product={product} onOpenCart={onOpenCart} />
+              </RevealSection>
+            ))}
+          </div>
+        )}
 
       </div>
     </section>

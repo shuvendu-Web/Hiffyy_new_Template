@@ -24,7 +24,7 @@ export const RevealSection: React.FC<RevealSectionProps> = ({
   duration = 800,
   direction = 'up',
   distance = 32,
-  threshold = 0.12,
+  threshold = 0.04,
   once = true,
   as: Component = 'div',
   style,
@@ -48,6 +48,27 @@ export const RevealSection: React.FC<RevealSectionProps> = ({
       return;
     }
 
+    // Immediate check if element is already within or near viewport
+    const rect = el.getBoundingClientRect();
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+    if (rect.top <= viewportHeight + 60 && rect.bottom >= -60) {
+      setIsVisible(true);
+      if (once) return;
+    }
+
+    // Also check if current URL hash targets this element or a child
+    if (typeof window !== 'undefined' && window.location.hash) {
+      try {
+        const hashTarget = document.querySelector(window.location.hash);
+        if (hashTarget && (hashTarget === el || el.contains(hashTarget))) {
+          setIsVisible(true);
+          if (once) return;
+        }
+      } catch {
+        // Ignore invalid selector syntax
+      }
+    }
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -61,13 +82,24 @@ export const RevealSection: React.FC<RevealSectionProps> = ({
       },
       {
         threshold,
-        rootMargin: '0px 0px -50px 0px',
+        rootMargin: '0px 0px 60px 0px',
       }
     );
 
     observer.observe(el);
 
+    // Failsafe timer to prevent any element from staying permanently hidden on mobile devices
+    const safetyTimer = setTimeout(() => {
+      if (elementRef.current) {
+        const r = elementRef.current.getBoundingClientRect();
+        if (r.top <= (window.innerHeight || document.documentElement.clientHeight) + 150) {
+          setIsVisible(true);
+        }
+      }
+    }, 1000);
+
     return () => {
+      clearTimeout(safetyTimer);
       observer.disconnect();
     };
   }, [threshold, once]);
@@ -141,8 +173,8 @@ export function useScrollReveal(options: { threshold?: number; once?: boolean } 
         }
       },
       {
-        threshold: options.threshold ?? 0.12,
-        rootMargin: '0px 0px -50px 0px',
+        threshold: options.threshold ?? 0.04,
+        rootMargin: '0px 0px 60px 0px',
       }
     );
 

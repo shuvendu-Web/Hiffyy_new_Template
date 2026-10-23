@@ -1409,31 +1409,40 @@ app.get('/api/youpi/status', async (_req, res) => {
 
 // Vite middleware in development vs static serving in production
 async function startServer() {
-  const isDev = process.env.NODE_ENV !== 'production';
+  try {
+    const isDev = process.env.NODE_ENV !== 'production';
 
-  // Attempt MongoDB connection on startup
-  const isConnected = await connectMongo();
-  if (isConnected) {
-    await seedInitialDataIfEmpty();
-  }
+    // Attempt MongoDB connection on startup
+    const isConnected = await connectMongo();
+    if (isConnected) {
+      await seedInitialDataIfEmpty();
+    }
 
-  if (isDev) {
-    const { createServer: createViteServer } = await import('vite');
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
+    if (isDev) {
+      console.log('[Server] Initializing Vite dev middleware...');
+      const { createServer: createViteServer } = await import('vite');
+      const vite = await createViteServer({
+        server: { middlewareMode: true },
+        appType: 'spa',
+      });
+      app.use(vite.middlewares);
+      console.log('[Server] Vite middleware attached successfully.');
+    } else {
+      app.use(express.static(path.resolve(__dirname, 'dist')));
+      app.get('*', (_req, res) => {
+        res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
+      });
+    }
+
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`HIFFYY COMMERCE OS server running on http://localhost:${PORT}`);
     });
-    app.use(vite.middlewares);
-  } else {
-    app.use(express.static(path.resolve(__dirname, 'dist')));
-    app.get('*', (_req, res) => {
-      res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
-    });
+  } catch (err) {
+    console.error('[Server] Fatal startup error:', err);
   }
-
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`HIFFYY COMMERCE OS server running on http://0.0.0.0:${PORT}`);
-  });
 }
 
-startServer();
+startServer().catch((err) => {
+  console.error('[Server] Unhandled startServer error:', err);
+});
+
