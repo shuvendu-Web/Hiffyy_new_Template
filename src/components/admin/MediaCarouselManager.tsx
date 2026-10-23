@@ -9,10 +9,11 @@ export const MediaCarouselManager: React.FC = () => {
   const [editingItem, setEditingItem] = useState<MediaItem | null>(null);
 
   // Form State
-  const [type, setType] = useState<'youtube' | 'instagram' | 'image_banner'>('youtube');
+  const [type, setType] = useState<'youtube' | 'instagram' | 'image_banner' | 'video'>('youtube');
   const [title, setTitle] = useState('');
   const [caption, setCaption] = useState('');
   const [mediaUrl, setMediaUrl] = useState('');
+  const [videoUrl, setVideoUrl] = useState('');
   const [thumbnailUrl, setThumbnailUrl] = useState('');
   const [ctaLabel, setCtaLabel] = useState('Shop Flacon');
   const [ctaLink, setCtaLink] = useState('/products/oud-royal-rajasthan');
@@ -20,10 +21,11 @@ export const MediaCarouselManager: React.FC = () => {
 
   const handleOpenCreate = () => {
     setEditingItem(null);
-    setType('youtube');
+    setType('video');
     setTitle('');
     setCaption('');
     setMediaUrl('');
+    setVideoUrl('');
     setThumbnailUrl('https://images.unsplash.com/photo-1594035910387-fea47794261f?auto=format&fit=crop&w=800&q=80');
     setCtaLabel('Shop Creation');
     setCtaLink('/products/oud-royal-rajasthan');
@@ -37,6 +39,7 @@ export const MediaCarouselManager: React.FC = () => {
     setTitle(item.title);
     setCaption(item.caption);
     setMediaUrl(item.mediaUrl);
+    setVideoUrl(item.videoUrl || '');
     setThumbnailUrl(item.thumbnailUrl);
     setCtaLabel(item.ctaLabel || 'Shop Flacon');
     setCtaLink(item.ctaLink || '/products/oud-royal-rajasthan');
@@ -57,6 +60,7 @@ export const MediaCarouselManager: React.FC = () => {
         title,
         caption,
         mediaUrl,
+        videoUrl: videoUrl || undefined,
         embedId,
         thumbnailUrl,
         ctaLabel,
@@ -69,6 +73,7 @@ export const MediaCarouselManager: React.FC = () => {
         title,
         caption,
         mediaUrl,
+        videoUrl: videoUrl || undefined,
         embedId,
         thumbnailUrl,
         ctaLabel,
@@ -113,9 +118,20 @@ export const MediaCarouselManager: React.FC = () => {
               <div className="relative aspect-video w-full overflow-hidden bg-[#182F23]">
                 <img src={item.thumbnailUrl} alt="" className="w-full h-full object-cover" />
                 <div className="absolute top-2 left-2 px-2 py-0.5 bg-[#12231A]/80 text-white text-[9px] uppercase font-bold rounded-sm flex items-center gap-1">
-                  {item.type === 'youtube' ? <Youtube className="w-3 h-3 text-red-500" /> : <Instagram className="w-3 h-3 text-pink-400" />}
+                  {item.type === 'youtube' ? (
+                    <Youtube className="w-3 h-3 text-red-500" />
+                  ) : item.type === 'instagram' ? (
+                    <Instagram className="w-3 h-3 text-pink-400" />
+                  ) : (
+                    <Film className="w-3 h-3 text-[#DFCAAB]" />
+                  )}
                   <span>{item.type}</span>
                 </div>
+                {item.videoUrl && (
+                  <div className="absolute bottom-2 left-2 px-1.5 py-0.5 bg-black/75 backdrop-blur-sm text-[#DFCAAB] text-[8px] uppercase tracking-wider font-mono rounded">
+                    MP4 Autoplay
+                  </div>
+                )}
                 <div className="absolute top-2 right-2 px-2 py-0.5 text-[9px] uppercase font-bold rounded-sm bg-white/90 text-[#12231A]">
                   {item.isActive ? 'Active' : 'Inactive'}
                 </div>
@@ -156,7 +172,7 @@ export const MediaCarouselManager: React.FC = () => {
       {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-lg bg-white p-6 rounded-sm border border-[#E6DFD5] shadow-2xl">
+          <div className="w-full max-w-lg bg-white p-6 rounded-sm border border-[#E6DFD5] shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-sm font-serif font-bold text-[#12231A]">
                 {editingItem ? 'Edit Media Item' : 'New Homepage Carousel Item'}
@@ -174,9 +190,10 @@ export const MediaCarouselManager: React.FC = () => {
                   </label>
                   <select
                     value={type}
-                    onChange={(e) => setType(e.target.value as 'youtube' | 'instagram' | 'image_banner')}
+                    onChange={(e) => setType(e.target.value as 'youtube' | 'instagram' | 'image_banner' | 'video')}
                     className="w-full p-2 bg-[#FAF8F5] border border-[#E6DFD5] text-xs focus:outline-none"
                   >
+                    <option value="video">Direct Video Stream (MP4/WebM - Autoplay & Popup Sound)</option>
                     <option value="youtube">YouTube Short / Video</option>
                     <option value="instagram">Instagram Reel</option>
                     <option value="image_banner">Promotional Video Banner</option>
@@ -212,12 +229,28 @@ export const MediaCarouselManager: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-[#717A75] uppercase mb-1">
-                  Video URL / Reel URL *
+                <label className="block text-[11px] font-bold text-[#717A75] uppercase mb-1 flex items-center justify-between">
+                  <span>Direct MP4 / WebM Video URL</span>
+                  <span className="text-[10px] text-[#C5A880] lowercase font-normal">(required for silent card autoplay + sound popup)</span>
                 </label>
                 <input
                   type="url"
-                  required
+                  value={videoUrl}
+                  onChange={(e) => setVideoUrl(e.target.value)}
+                  placeholder="https://.../video.mp4"
+                  className="w-full p-2 bg-[#FAF8F5] border border-[#E6DFD5] text-xs font-mono"
+                />
+                <p className="text-[10px] text-[#717A75] mt-1">
+                  Autoplays silently in the carousel card, and plays with audio when clicked in the luxury popup.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-[#717A75] uppercase mb-1">
+                  External Media URL / Reel URL (Optional fallback)
+                </label>
+                <input
+                  type="url"
                   value={mediaUrl}
                   onChange={(e) => setMediaUrl(e.target.value)}
                   placeholder="https://www.youtube.com/watch?v=... or https://www.instagram.com/reel/..."

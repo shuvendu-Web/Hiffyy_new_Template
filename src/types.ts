@@ -169,11 +169,12 @@ export interface SalesChannel {
 
 export interface MediaItem {
   id: string;
-  type: 'youtube' | 'instagram' | 'image_banner';
+  type: 'youtube' | 'instagram' | 'image_banner' | 'video';
   title: string;
   caption: string;
   mediaUrl: string;
   embedId: string;
+  videoUrl?: string; // Direct MP4 or WebM video stream
   thumbnailUrl: string;
   ctaLabel?: string;
   ctaLink?: string;
@@ -264,6 +265,20 @@ export interface AppUser {
   isAnonymous?: boolean;
 }
 
+export type ObjectFitProperty = 'contain' | 'cover' | 'fill' | 'scale-down' | 'none';
+export type ObjectPositionProperty = 'center center' | 'center bottom' | 'center top' | 'left center' | 'right center' | string;
+
+export interface TextTypographySettings {
+  fontWeight?: string; // '300' | '400' | '500' | '600' | '700' | '800' | '900'
+  color?: string; // hex color e.g. '#FFFFFF'
+  fontSize?: string; // 'sm' | 'base' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl'
+  fontFamily?: 'sans' | 'serif' | 'mono';
+  fontStyle?: 'normal' | 'italic';
+  textTransform?: 'none' | 'uppercase' | 'capitalize' | 'lowercase';
+  letterSpacing?: 'tighter' | 'tight' | 'normal' | 'wide' | 'wider' | 'widest';
+  pillBgColor?: string; // Optional pill background for subtitle badge
+}
+
 export interface HeroCarouselProduct {
   id: string;
   title: string;
@@ -278,7 +293,38 @@ export interface HeroCarouselProduct {
   cardImage: string;
   heroModelImage: string;
   statBadge: string;
+  cardImageObjectFit?: ObjectFitProperty;
+  heroModelObjectFit?: ObjectFitProperty;
+  heroModelObjectPosition?: ObjectPositionProperty;
+  customCardGlass?: boolean;
+  cardGlassColor?: string;
+  cardGlassOpacity?: number;
+  cardGlassBlur?: number;
+  cardBorderColor?: string;
+  cardBorderOpacity?: number;
+  cardGlowColor?: string;
+  cardGlassTextColor?: 'auto' | 'dark' | 'light';
+  canvasBgColor?: string;
+  titleStyle?: TextTypographySettings;
+  subtitleStyle?: TextTypographySettings;
+  headlineFirstStyle?: TextTypographySettings;
+  headlineSecondStyle?: TextTypographySettings;
+  descriptionStyle?: TextTypographySettings;
 }
+
+export interface HeroGlassSettings {
+  enabled: boolean;
+  tintColor: string; // Hex color code (e.g. #FFFFFF, #12231A, #96F816, #C5A880)
+  opacity: number; // 0 to 100 percentage
+  blur: number; // 0 to 40 px backdrop filter blur
+  borderOpacity: number; // 0 to 100 percentage
+  borderColor: string; // Hex border color
+  borderRadius: number; // 8 to 32 px
+  shadowGlow: boolean;
+  glowColor: string;
+  cardTextColor: 'auto' | 'dark' | 'light';
+}
+
 
 export interface BrandLogosSettings {
   headerLogo: string;

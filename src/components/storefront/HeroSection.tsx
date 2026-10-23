@@ -21,8 +21,9 @@ import {
   MessageSquare,
   Bot,
 } from 'lucide-react';
-import { Product } from '../../types';
+import { Product, HeroCarouselProduct, HeroGlassSettings, ObjectFitProperty, TextTypographySettings } from '../../types';
 import { BrandLogo } from './BrandLogo';
+import { INITIAL_HERO_SLIDES } from '../../data/initialData';
 
 // Model Portraits for each active carousel product
 import heroModelCream from '../../assets/images/hero_model_cream_moisture_1791613615042.jpg';
@@ -35,28 +36,105 @@ import creamJarImg from '../../assets/images/product_cream_jar_1791611651854.jpg
 import tonerBottleImg from '../../assets/images/product_toner_bottle_1791611662876.jpg';
 import serumDropperImg from '../../assets/images/product_serum_dropper_1791611672796.jpg';
 
+const hexToRgba = (hex: string, alpha: number) => {
+  const clean = (hex || '#FFFFFF').replace('#', '');
+  let r = 255, g = 255, b = 255;
+  if (clean.length === 3) {
+    r = parseInt(clean[0] + clean[0], 16) || 255;
+    g = parseInt(clean[1] + clean[1], 16) || 255;
+    b = parseInt(clean[2] + clean[2], 16) || 255;
+  } else if (clean.length >= 6) {
+    r = parseInt(clean.substring(0, 2), 16) || 255;
+    g = parseInt(clean.substring(2, 4), 16) || 255;
+    b = parseInt(clean.substring(4, 6), 16) || 255;
+  }
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
+const isColorDark = (hex: string) => {
+  const clean = (hex || '#FFFFFF').replace('#', '');
+  let r = 255, g = 255, b = 255;
+  if (clean.length === 3) {
+    r = parseInt(clean[0] + clean[0], 16) || 255;
+    g = parseInt(clean[1] + clean[1], 16) || 255;
+    b = parseInt(clean[2] + clean[2], 16) || 255;
+  } else if (clean.length >= 6) {
+    r = parseInt(clean.substring(0, 2), 16) || 255;
+    g = parseInt(clean.substring(2, 4), 16) || 255;
+    b = parseInt(clean.substring(4, 6), 16) || 255;
+  }
+  const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+  return yiq < 128;
+};
+
+const getTypographyStyle = (
+  style?: TextTypographySettings,
+  defaults?: {
+    color?: string;
+    weight?: string;
+    transform?: string;
+    fontStyle?: string;
+    letterSpacing?: string;
+    family?: 'sans' | 'serif' | 'mono';
+    size?: string;
+  }
+): React.CSSProperties => {
+  const fontFamilyMap = {
+    sans: 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    serif: 'Playfair Display, "Times New Roman", Georgia, serif',
+    mono: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+  };
+
+  const letterSpacingMap: Record<string, string> = {
+    tighter: '-0.05em',
+    tight: '-0.025em',
+    normal: '0em',
+    wide: '0.025em',
+    wider: '0.05em',
+    widest: '0.1em',
+  };
+
+  const fontSizeMap: Record<string, string> = {
+    sm: '0.875rem',
+    base: '1rem',
+    lg: '1.125rem',
+    xl: '1.25rem',
+    '2xl': '1.5rem',
+    '3xl': '1.875rem',
+    '4xl': '2.25rem',
+  };
+
+  if (!style) {
+    return {
+      color: defaults?.color,
+      fontWeight: defaults?.weight,
+      fontStyle: defaults?.fontStyle as React.CSSProperties['fontStyle'],
+      textTransform: defaults?.transform as React.CSSProperties['textTransform'],
+      letterSpacing: defaults?.letterSpacing,
+      fontFamily: defaults?.family ? fontFamilyMap[defaults.family] : undefined,
+      fontSize: defaults?.size ? fontSizeMap[defaults.size] : undefined,
+    };
+  }
+
+  const selectedFamily = style.fontFamily || defaults?.family;
+
+  return {
+    color: style.color || defaults?.color,
+    fontWeight: style.fontWeight || defaults?.weight,
+    fontStyle: (style.fontStyle || defaults?.fontStyle) as React.CSSProperties['fontStyle'],
+    textTransform: (style.textTransform || defaults?.transform) as React.CSSProperties['textTransform'],
+    fontFamily: selectedFamily ? fontFamilyMap[selectedFamily] : undefined,
+    letterSpacing: style.letterSpacing ? letterSpacingMap[style.letterSpacing] : defaults?.letterSpacing,
+    fontSize: style.fontSize ? fontSizeMap[style.fontSize] : (defaults?.size ? fontSizeMap[defaults.size] : undefined),
+  };
+};
+
 interface HeroSectionProps {
   onOpenQuiz?: () => void;
   onOpenCart?: () => void;
   onOpenAccountModal?: (tab?: 'addresses' | 'orders' | 'wishlist') => void;
   onOpenWishlist?: () => void;
   onTrackOrder?: () => void;
-}
-
-interface HeroCarouselProduct {
-  id: string;
-  title: string;
-  subtitle: string;
-  headlineFirst: string;
-  headlineSecond: string;
-  description: string;
-  variantSize: '30ml' | '50ml' | '100ml';
-  volumeLabel: string;
-  priceUSD: number;
-  priceINR: number;
-  cardImage: string;
-  heroModelImage: string;
-  statBadge: string;
 }
 
 export const HeroSection: React.FC<HeroSectionProps> = ({
@@ -74,6 +152,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     user,
     products,
     heroSlides,
+    heroGlassSettings,
     setSelectedProduct,
     setCurrentView,
     loginWithGoogle,
@@ -135,72 +214,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
   const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
 
-  const heroProducts: HeroCarouselProduct[] = heroSlides && heroSlides.length > 0 ? heroSlides : [
-    {
-      id: 'hero-cream-centella',
-      title: 'Centella Moisture Cream',
-      subtitle: 'Restorative Dermal Barrier & Moisture Cream',
-      headlineFirst: 'Bloom in',
-      headlineSecond: 'Pure Radiance',
-      description:
-        'Discover your true beauty and bloom with confidence. Care for your skin with purity and embrace your authentic glow.',
-      variantSize: '50ml',
-      volumeLabel: '50ml / 1.7 FL.OZ Max',
-      priceUSD: 59.99,
-      priceINR: 3499,
-      cardImage: creamJarImg,
-      heroModelImage: heroModelCream,
-      statBadge: '680K +',
-    },
-    {
-      id: 'hero-toner-calming',
-      title: 'Gentle Calming Toner',
-      subtitle: 'Pure Petrichor Hydrosol & Pore Balancing Essence',
-      headlineFirst: 'Bloom in',
-      headlineSecond: 'Pure Balance',
-      description:
-        'Soothe sun-drenched skin with wild rain distillates and Kannauj neroli blossoms for ethereal clarity.',
-      variantSize: '50ml',
-      volumeLabel: '150ml / 5.1 FL.OZ Max',
-      priceUSD: 39.49,
-      priceINR: 2799,
-      cardImage: tonerBottleImg,
-      heroModelImage: heroModelToner,
-      statBadge: '450K +',
-    },
-    {
-      id: 'hero-serum-vitaminc',
-      title: 'Vitamin C Brightening Serum',
-      subtitle: 'Antioxidant Saffron Elixir & Dermal Illumination',
-      headlineFirst: 'Bloom in',
-      headlineSecond: 'Golden Vitality',
-      description:
-        'Infused with hand-picked Pampore saffron threads and pure ascorbic complex to awaken luminous glass skin.',
-      variantSize: '30ml',
-      volumeLabel: '30ml / 1.0 FL.OZ Max',
-      priceUSD: 74.99,
-      priceINR: 4299,
-      cardImage: serumDropperImg,
-      heroModelImage: heroModelSerumAmber,
-      statBadge: '820K +',
-    },
-    {
-      id: 'hero-serum-flagship',
-      title: 'Advanced Skin Refining Serum',
-      subtitle: 'Imperial Botanical Extrait & Cellular Rejuvenation',
-      headlineFirst: 'Bloom in',
-      headlineSecond: 'Imperial Sillage',
-      description:
-        'Artisanal wooden-cask aged botanicals, rare Assam oudh, and concentrated peptides for timeless skin radiance.',
-      variantSize: '30ml',
-      volumeLabel: '30ml / 1.0 FL.OZ',
-      priceUSD: 84.0,
-      priceINR: 4899,
-      cardImage: serumDropperImg,
-      heroModelImage: heroModelRadiance,
-      statBadge: '950K +',
-    },
-  ];
+  const heroProducts: HeroCarouselProduct[] = heroSlides && heroSlides.length > 0 ? heroSlides : INITIAL_HERO_SLIDES;
 
   const activeProduct = heroProducts[activeIndex % heroProducts.length] || heroProducts[0];
 
@@ -283,14 +297,52 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
   return (
     <section className="w-full bg-[#EBF2EC] py-2.5 sm:py-3.5 px-3 sm:px-6 lg:px-8 transition-colors duration-500">
-      {/* Outer rounded card matching reference design with 60% #A0B7A3 canvas */}
+      {/* Outer rounded card matching reference design with individual canvasBgColor per active slide */}
       <div
-        className="max-w-[1380px] mx-auto relative rounded-[28px] sm:rounded-[36px] lg:rounded-[42px] bg-[#A0B7A3] overflow-hidden shadow-2xl shadow-[#12231A]/10 border border-[#8BA68F]/40"
+        className="max-w-[1380px] mx-auto relative rounded-[28px] sm:rounded-[36px] lg:rounded-[42px] overflow-hidden shadow-2xl shadow-[#12231A]/10 border border-[#8BA68F]/40 transition-colors duration-700"
+        style={{
+          backgroundColor: activeProduct.canvasBgColor || '#A0B7A3',
+        }}
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
       >
-        {/* Subtle Ambient Radial Lighting in #A0B7A3 Tone */}
-        <div className="absolute inset-0 bg-gradient-to-tr from-[#94AB97] via-[#A0B7A3] to-[#AEC5B1] opacity-90 pointer-events-none" />
+        {/* Subtle Ambient Radial Lighting with individual slide tone support */}
+        <div
+          className="absolute inset-0 opacity-90 pointer-events-none transition-all duration-700"
+          style={{
+            background: activeProduct.canvasBgColor
+              ? `radial-gradient(circle at 50% 40%, ${hexToRgba(activeProduct.canvasBgColor, 0.55)} 0%, ${activeProduct.canvasBgColor} 100%)`
+              : 'linear-gradient(to top right, #94AB97, #A0B7A3, #AEC5B1)',
+          }}
+        />
+
+        {/* FULL HERO SECTION SLIDE IMAGES (Operates across entire full hero section with dynamic object-fit & object-position) */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+          {heroProducts.map((prod, idx) => {
+            const fit = prod.heroModelObjectFit || 'contain';
+            const position = prod.heroModelObjectPosition || (fit === 'contain' ? 'center bottom' : 'center center');
+            return (
+              <img
+                key={prod.id}
+                src={prod.heroModelImage}
+                alt={prod.title}
+                decoding="async"
+                loading={idx === activeIndex ? 'eager' : 'lazy'}
+                style={{
+                  objectFit: fit,
+                  objectPosition: position,
+                }}
+                className={`absolute inset-0 w-full h-full select-none transition-all duration-700 ease-in-out ${
+                  idx === activeIndex
+                    ? 'opacity-100 scale-100'
+                    : 'opacity-0 scale-95 pointer-events-none'
+                }`}
+              />
+            );
+          })}
+          {/* Subtle gradient vignette overlay to guarantee readability of title, copy, and buttons */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/15 pointer-events-none" />
+        </div>
 
         {/* In-Hero Navigation Header */}
         <div className="relative z-30 pt-4 sm:pt-5 px-5 sm:px-8 lg:px-10 flex items-center justify-between gap-4">
@@ -656,19 +708,64 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start relative">
             {/* Left Column: Heading and Subtitle that smoothly reflect active product */}
             <div className="lg:col-span-6 pt-2 sm:pt-4 z-20">
-              {/* Product Badge Pill in #96F816 */}
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#12231A] text-[#96F816] text-[10px] font-semibold tracking-wider uppercase mb-3 shadow-sm border border-[#96F816]/30">
-                <Sparkles className="w-3 h-3 text-[#96F816]" />
-                <span>{activeProduct.subtitle}</span>
-              </div>
+              {/* Product Badge Pill in #96F816 with individual typography */}
+              {(() => {
+                const sub = activeProduct.subtitleStyle;
+                const pillBg = sub?.pillBgColor || '#12231A';
+                const textColor = sub?.color || '#96F816';
+                return (
+                  <div
+                    style={{
+                      backgroundColor: pillBg,
+                      borderColor: hexToRgba(textColor, 0.35),
+                    }}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full mb-3 shadow-sm border transition-all duration-500"
+                  >
+                    <Sparkles className="w-3 h-3" style={{ color: textColor }} />
+                    <span
+                      style={getTypographyStyle(sub, {
+                        color: '#96F816',
+                        weight: '600',
+                        transform: 'uppercase',
+                        letterSpacing: '0.05em',
+                      })}
+                      className="text-[10px]"
+                    >
+                      {activeProduct.subtitle}
+                    </span>
+                  </div>
+                );
+              })()}
 
-              <h1 className="text-3xl sm:text-4xl lg:text-[48px] font-medium tracking-tight text-white leading-[1.08] font-sans transition-all duration-500">
-                {activeProduct.headlineFirst}
-                <br />
-                <span className="text-white drop-shadow-sm">{activeProduct.headlineSecond}</span>
+              <h1 className="leading-[1.08] transition-all duration-500">
+                <span
+                  style={getTypographyStyle(activeProduct.headlineFirstStyle, {
+                    color: '#FFFFFF',
+                    weight: '500',
+                  })}
+                  className="block text-3xl sm:text-4xl lg:text-[48px] tracking-tight"
+                >
+                  {activeProduct.headlineFirst}
+                </span>
+                <span
+                  style={getTypographyStyle(activeProduct.headlineSecondStyle, {
+                    color: '#FFFFFF',
+                    weight: '500',
+                    family: 'serif',
+                  })}
+                  className="block text-3xl sm:text-4xl lg:text-[48px] tracking-tight drop-shadow-sm font-serif"
+                >
+                  {activeProduct.headlineSecond}
+                </span>
               </h1>
 
-              <p className="mt-2.5 sm:mt-3 text-xs sm:text-[13px] text-white/90 font-normal max-w-sm sm:max-w-md leading-relaxed transition-opacity duration-500">
+              <p
+                style={getTypographyStyle(activeProduct.descriptionStyle, {
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  weight: '400',
+                })}
+                className="mt-2.5 sm:mt-3 text-xs sm:text-[13px] max-w-sm sm:max-w-md leading-relaxed transition-opacity duration-500"
+              >
                 {activeProduct.description}
               </p>
 
@@ -716,8 +813,15 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   </span>
                 </div>
 
-                {/* Subtext with Active Product Title */}
-                <p className="text-xs text-white/95 font-semibold mt-1.5 mb-3 tracking-wide">
+                {/* Subtext with Active Product Title with individual typography */}
+                <p
+                  style={getTypographyStyle(activeProduct.titleStyle, {
+                    color: 'rgba(255, 255, 255, 0.95)',
+                    weight: '600',
+                    letterSpacing: '0.025em',
+                  })}
+                  className="text-xs mt-1.5 mb-3"
+                >
                   {activeProduct.title}
                 </p>
 
@@ -747,25 +851,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             </div>
           </div>
 
-          {/* Center Stage: Stacked Smooth Crossfade Hero Model Portraits */}
-          <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none overflow-hidden">
-            <div className="relative w-full h-full max-w-[800px] flex items-center justify-center">
-              {heroProducts.map((prod, idx) => (
-                <img
-                  key={prod.id}
-                  src={prod.heroModelImage}
-                  alt={prod.title}
-                  decoding="async"
-                  loading={idx === activeIndex ? 'eager' : 'lazy'}
-                  className={`absolute inset-0 w-auto h-full max-h-[460px] sm:max-h-[510px] mx-auto object-contain object-bottom select-none translate-y-4 sm:translate-y-6 transition-all duration-700 ease-in-out ${
-                    idx === activeIndex
-                      ? 'opacity-100 scale-100'
-                      : 'opacity-0 scale-95 pointer-events-none'
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
+
 
           {/* Bottom Carousel Section with Green Navigation Arrows (< and >) */}
           <div className="relative z-20 pt-6 sm:pt-8 mt-auto">
@@ -781,23 +867,57 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               </button>
 
               {/* Product Cards Row (Responsive No-Wrap Carousel: Desktop 4, Tablet 3, Mobile 2) */}
-              <div className="flex-1 overflow-hidden relative">
+              <div className="flex-1 relative overflow-visible">
                 <div
                   ref={carouselContainerRef}
-                  className="flex flex-nowrap gap-2.5 sm:gap-3.5 items-end overflow-x-auto scroll-smooth scrollbar-none pb-1"
+                  className="flex flex-nowrap gap-2.5 sm:gap-3.5 items-end overflow-x-auto scroll-smooth scrollbar-none pb-2 pt-6 overflow-y-visible"
                   style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
                   {heroProducts.map((prod, idx) => {
                     const isActive = idx === activeIndex;
 
+                    // Individual Slide Settings Isolation:
+                    // If customCardGlass is enabled on this specific slide, use its individual properties.
+                    // Otherwise, gracefully fall back to the global heroGlassSettings.
+                    const useIndividual = Boolean(prod.customCardGlass);
+                    const tintColor = useIndividual && prod.cardGlassColor ? prod.cardGlassColor : (heroGlassSettings?.tintColor || '#FFFFFF');
+                    const opacity = useIndividual && prod.cardGlassOpacity !== undefined ? prod.cardGlassOpacity : (heroGlassSettings?.opacity ?? 85);
+                    const blur = useIndividual && prod.cardGlassBlur !== undefined ? prod.cardGlassBlur : (heroGlassSettings?.blur ?? 16);
+                    const borderColor = useIndividual && prod.cardBorderColor ? prod.cardBorderColor : (heroGlassSettings?.borderColor || '#FFFFFF');
+                    const borderOpacity = useIndividual && prod.cardBorderOpacity !== undefined ? prod.cardBorderOpacity : (heroGlassSettings?.borderOpacity ?? 50);
+                    const glowColor = useIndividual && prod.cardGlowColor ? prod.cardGlowColor : (heroGlassSettings?.glowColor || '#96F816');
+                    const textMode = useIndividual && prod.cardGlassTextColor ? prod.cardGlassTextColor : (heroGlassSettings?.cardTextColor || 'auto');
+
+                    const glassBg = hexToRgba(tintColor, opacity / 100);
+                    const glassBorder = `1px solid ${hexToRgba(borderColor, borderOpacity / 100)}`;
+                    const glassBlur = `${blur}px`;
+                    const glassRadius = heroGlassSettings?.enabled ? `${heroGlassSettings.borderRadius ?? 16}px` : '16px';
+                    const glassShadow = (heroGlassSettings?.shadowGlow || useIndividual)
+                      ? `0 10px 25px -5px ${hexToRgba(glowColor, 0.25)}, 0 8px 10px -6px ${hexToRgba(glowColor, 0.2)}`
+                      : undefined;
+
+                    const isLightText =
+                      textMode === 'light' ||
+                      (textMode !== 'dark' && isColorDark(tintColor) && opacity > 40);
+
                     return (
                       <div
                         key={prod.id}
                         onClick={() => setActiveIndex(idx)}
-                        className={`relative bg-white rounded-2xl p-2.5 sm:p-3 shadow-md transition-all duration-300 cursor-pointer flex flex-col justify-between h-[165px] sm:h-[180px] shrink-0 w-[calc(50%-5px)] sm:w-[calc(33.333%-8px)] lg:w-[calc(25%-9px)] ${
+                        style={{
+                          backgroundColor: glassBg,
+                          backdropFilter: (heroGlassSettings?.enabled || useIndividual) ? `blur(${glassBlur})` : undefined,
+                          WebkitBackdropFilter: (heroGlassSettings?.enabled || useIndividual) ? `blur(${glassBlur})` : undefined,
+                          border: isActive ? `2px solid ${glowColor}` : glassBorder,
+                          borderRadius: glassRadius,
+                          boxShadow: isActive
+                            ? `0 12px 30px -4px ${hexToRgba(glowColor, 0.45)}`
+                            : glassShadow,
+                        }}
+                        className={`relative p-2.5 sm:p-3 transition-all duration-300 cursor-pointer flex flex-col justify-between h-[165px] sm:h-[180px] shrink-0 w-[calc(50%-5px)] sm:w-[calc(33.333%-8px)] lg:w-[calc(25%-9px)] overflow-visible ${
                           isActive
-                            ? 'ring-2 ring-[#96F816] -translate-y-1 shadow-xl shadow-[#96F816]/20 border-transparent'
-                            : 'border border-white/70 hover:shadow-md opacity-90 hover:opacity-100'
+                            ? '-translate-y-1'
+                            : 'hover:shadow-md opacity-90 hover:opacity-100'
                         }`}
                       >
                         {/* Wishlist Button */}
@@ -810,6 +930,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                           className={`absolute top-2 right-2 p-1.5 rounded-full shadow-sm transition-colors cursor-pointer ${
                             wishlist.includes(prod.id)
                               ? 'bg-[#96F816] text-[#12231A]'
+                              : isLightText
+                              ? 'bg-black/40 text-white hover:bg-[#96F816] hover:text-[#12231A]'
                               : 'bg-white/90 text-[#12231A] hover:bg-[#96F816]'
                           }`}
                           title="Save to Wishlist"
@@ -817,37 +939,57 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                           <Heart className={`w-3 h-3 ${wishlist.includes(prod.id) ? 'fill-[#12231A]' : ''}`} />
                         </button>
 
-                        {/* Product Packshot Photo */}
-                        <div className="w-full h-18 sm:h-22 flex items-center justify-center overflow-hidden mb-1">
+                        {/* Product Packshot Photo with object-fit (overflow-hidden removed) */}
+                        <div className="w-full h-18 sm:h-22 flex items-center justify-center mb-1 relative overflow-visible">
                           <img
                             src={prod.cardImage}
                             alt={prod.title}
-                            className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
+                            style={{
+                              objectFit: prod.cardImageObjectFit || 'contain',
+                              width: prod.cardImageObjectFit === 'cover' || prod.cardImageObjectFit === 'fill' ? '100%' : undefined,
+                              height: prod.cardImageObjectFit === 'cover' || prod.cardImageObjectFit === 'fill' ? '100%' : undefined,
+                            }}
+                            className="max-h-full max-w-full transition-transform duration-300 group-hover:scale-105"
                           />
                         </div>
 
                         <div>
                           {/* Price */}
-                          <div className="text-[#12231A] font-extrabold text-xs sm:text-sm tracking-tight flex items-center justify-between">
+                          <div className={`font-extrabold text-xs sm:text-sm tracking-tight flex items-center justify-between ${
+                            isLightText ? 'text-white' : 'text-[#12231A]'
+                          }`}>
                             <span>₹{(prod.priceINR ?? 3499).toLocaleString()}</span>
                           </div>
 
                           {/* Title */}
-                          <div className="text-slate-800 text-[10px] sm:text-[11px] font-semibold leading-tight line-clamp-1 mt-0.5">
+                          <div
+                            style={prod.titleStyle ? getTypographyStyle(prod.titleStyle) : undefined}
+                            className={`text-[10px] sm:text-[11px] font-semibold leading-tight line-clamp-1 mt-0.5 ${
+                              !prod.titleStyle?.color ? (isLightText ? 'text-gray-100' : 'text-slate-800') : ''
+                            }`}
+                          >
                             {prod.title}
                           </div>
 
                           {/* Bottom Volume & Action Button */}
                           <div className="flex items-center justify-between gap-1 mt-1.5">
-                            <span className="text-[8px] text-slate-400 font-medium">
+                            <span className={`text-[8px] font-medium ${
+                              isLightText ? 'text-gray-300' : 'text-slate-400'
+                            }`}>
                               {prod.volumeLabel}
                             </span>
 
                             <button
                               onClick={(e) => handleQuickAdd(prod, e)}
+                              style={{
+                                backgroundColor: isActive ? glowColor : undefined,
+                                color: isActive ? (isColorDark(glowColor) ? '#FFFFFF' : '#12231A') : undefined,
+                              }}
                               className={`text-[9px] sm:text-[10px] font-bold px-2.5 py-0.5 rounded-full transition-all cursor-pointer shrink-0 shadow-xs ${
                                 isActive
-                                  ? 'bg-[#96F816] text-[#12231A] hover:bg-[#85e110]'
+                                  ? 'hover:brightness-110'
+                                  : isLightText
+                                  ? 'bg-white/90 text-[#12231A] hover:bg-white'
                                   : 'bg-black text-white hover:bg-slate-800'
                               }`}
                             >

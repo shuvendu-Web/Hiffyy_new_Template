@@ -14,7 +14,9 @@ import {
   HeroCarouselProduct,
   AppUser,
   BrandLogosSettings,
+  HeroGlassSettings,
 } from '../types';
+
 
 import {
   INITIAL_PRODUCTS,
@@ -162,7 +164,13 @@ interface StoreContextType {
   brandLogos: BrandLogosSettings;
   updateBrandLogos: (settings: Partial<BrandLogosSettings>) => void;
   resetBrandLogos: () => void;
+
+  // Hero Card Glassmorphism
+  heroGlassSettings: HeroGlassSettings;
+  updateHeroGlassSettings: (settings: Partial<HeroGlassSettings>) => void;
+  resetHeroGlassSettings: () => void;
 }
+
 
 export const DEFAULT_BRAND_LOGOS: BrandLogosSettings = {
   headerLogo: '',
@@ -179,8 +187,21 @@ export const DEFAULT_BRAND_LOGOS: BrandLogosSettings = {
   enableCustomFavicon: false,
 };
 
+export const DEFAULT_HERO_GLASS_SETTINGS: HeroGlassSettings = {
+  enabled: true,
+  tintColor: '#FFFFFF',
+  opacity: 85,
+  blur: 16,
+  borderOpacity: 50,
+  borderColor: '#FFFFFF',
+  borderRadius: 16,
+  shadowGlow: true,
+  glowColor: '#96F816',
+  cardTextColor: 'auto',
+};
 
 const StoreContext = createContext<StoreContextType | null>(null);
+
 
 // Safe LocalStorage wrapper to prevent QuotaExceededError crashes
 
@@ -248,7 +269,22 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   });
   const [mediaItems, setMediaItems] = useState<MediaItem[]>(() => {
     const saved = localStorage.getItem('hiffyy_media_items');
-    return saved ? JSON.parse(saved) : INITIAL_MEDIA_ITEMS;
+    if (!saved) return INITIAL_MEDIA_ITEMS;
+    try {
+      const parsed: MediaItem[] = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map((item) => {
+          const init = INITIAL_MEDIA_ITEMS.find((m) => m.id === item.id);
+          return {
+            ...item,
+            videoUrl: item.videoUrl || init?.videoUrl,
+          };
+        });
+      }
+      return INITIAL_MEDIA_ITEMS;
+    } catch {
+      return INITIAL_MEDIA_ITEMS;
+    }
   });
   const [heroSlides, setHeroSlides] = useState<HeroCarouselProduct[]>(() => {
     try {
@@ -260,6 +296,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           let needsSanitize = false;
           const sanitized = parsed.map((slide) => {
             const s = { ...slide };
+            if (!s.cardImageObjectFit) s.cardImageObjectFit = 'contain';
+            if (!s.heroModelObjectFit) s.heroModelObjectFit = 'cover';
             if (s.heroModelImage && s.heroModelImage.startsWith('data:') && s.heroModelImage.length > 300000) {
               needsSanitize = true;
               s.heroModelImage = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80';
@@ -343,7 +381,35 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [brandLogos?.faviconIcon, brandLogos?.enableCustomFavicon]);
 
 
+  // Hero Card Glassmorphism State
+  const [heroGlassSettings, setHeroGlassSettings] = useState<HeroGlassSettings>(() => {
+    try {
+      const saved = localStorage.getItem('hiffyy_hero_glass');
+      return saved ? { ...DEFAULT_HERO_GLASS_SETTINGS, ...JSON.parse(saved) } : DEFAULT_HERO_GLASS_SETTINGS;
+    } catch {
+      return DEFAULT_HERO_GLASS_SETTINGS;
+    }
+  });
+
+  const updateHeroGlassSettings = (settings: Partial<HeroGlassSettings>) => {
+    setHeroGlassSettings((prev) => {
+      const updated = { ...prev, ...settings };
+      safeSetItem('hiffyy_hero_glass', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const resetHeroGlassSettings = () => {
+    setHeroGlassSettings(DEFAULT_HERO_GLASS_SETTINGS);
+    try {
+      localStorage.removeItem('hiffyy_hero_glass');
+    } catch (e) {
+      console.warn('Failed to reset hero glass settings in localStorage', e);
+    }
+  };
+
   // Knowledge docs
+
 
   const [knowledgeDocs, setKnowledgeDocs] = useState<KnowledgeDoc[]>(() => {
     const saved = localStorage.getItem('hiffyy_kb');
@@ -1067,7 +1133,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const addHeroSlide = (slide: HeroCarouselProduct) => {
-    setHeroSlides((prev) => [...prev, slide]);
+    setHeroSlides((prev) => {
+      const updated = [...prev, slide];
+      safeSetItem('hiffyy_hero_slides', JSON.stringify(updated));
+      return updated;
+    });
     fetch('/api/hero-slides', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1076,7 +1146,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const updateHeroSlide = (id: string, updates: Partial<HeroCarouselProduct>) => {
-    setHeroSlides((prev) => prev.map((s) => (s.id === id ? { ...s, ...updates } : s)));
+    setHeroSlides((prev) => {
+      const updated = prev.map((s) => (s.id === id ? { ...s, ...updates } : s));
+      safeSetItem('hiffyy_hero_slides', JSON.stringify(updated));
+      return updated;
+    });
     fetch(`/api/hero-slides/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -1085,7 +1159,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const deleteHeroSlide = (id: string) => {
-    setHeroSlides((prev) => prev.filter((s) => s.id !== id));
+    setHeroSlides((prev) => {
+      const updated = prev.filter((s) => s.id !== id);
+      safeSetItem('hiffyy_hero_slides', JSON.stringify(updated));
+      return updated;
+    });
     fetch(`/api/hero-slides/${id}`, { method: 'DELETE' }).catch(() => {});
   };
 
@@ -1327,7 +1405,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         brandLogos,
         updateBrandLogos,
         resetBrandLogos,
+        heroGlassSettings,
+        updateHeroGlassSettings,
+        resetHeroGlassSettings,
       }}
+
 
     >
       {children}
