@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useStore } from '../../context/StoreContext';
-import { Sparkles, ArrowRight, BookOpen, Clock, X, Youtube, ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
+import { Sparkles, ArrowRight, BookOpen, Clock, X, Youtube, ChevronLeft, ChevronRight, Pause, Play, Share2 } from 'lucide-react';
 import { RevealSection } from '../common/RevealSection';
 import { BlogPost } from '../../types';
 
@@ -12,6 +13,26 @@ export const JournalSection: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+
+  // Body scroll lock & Escape key listener for Article Reader Modal
+  useEffect(() => {
+    if (activeArticle) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          setActiveArticle(null);
+        }
+      };
+
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.body.style.overflow = originalOverflow;
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [activeArticle]);
 
   // Detect Mobile Viewport (< 768px: 1 card, >= 768px: 2 cards)
   useEffect(() => {
@@ -191,68 +212,123 @@ export const JournalSection: React.FC = () => {
         )}
       </div>
 
-      {/* Article Reader Modal */}
-      {activeArticle && (
-        <div className="fixed inset-0 z-50 bg-[#12231A]/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-          <div className="relative w-full max-w-3xl bg-white border border-[#E6DFD5] shadow-2xl rounded-sm p-6 sm:p-10 my-8">
-            <button
-              onClick={() => setActiveArticle(null)}
-              className="absolute top-4 right-4 text-[#717A75] hover:text-[#12231A] p-2 cursor-pointer"
+      {/* Article Reader Modal using createPortal to escape parent transform and overflow:hidden */}
+      {activeArticle &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200"
+            onClick={() => setActiveArticle(null)}
+          >
+            <div
+              className="relative w-full max-w-3xl bg-white border border-[#E6DFD5] shadow-2xl rounded-sm p-6 sm:p-10 my-auto max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
             >
-              <X className="w-5 h-5" />
-            </button>
+              {/* Close Button */}
+              <button
+                onClick={() => setActiveArticle(null)}
+                aria-label="Close article modal"
+                className="absolute top-4 right-4 text-[#717A75] hover:text-[#12231A] hover:bg-[#FAF8F5] p-2 rounded-full border border-transparent hover:border-[#E6DFD5] transition-all cursor-pointer z-10"
+              >
+                <X className="w-5 h-5" />
+              </button>
 
-            <div className="max-w-2xl mx-auto">
-              <span className="text-[10px] tracking-[0.2em] uppercase font-bold text-[#886938] block mb-2">
-                {activeArticle.category} • {activeArticle.readTime}
-              </span>
-
-              <h2 className="text-2xl sm:text-3xl font-serif font-bold text-[#12231A] mb-4 leading-tight">
-                {activeArticle.title}
-              </h2>
-
-              <div className="flex items-center gap-3 text-xs text-[#717A75] mb-6 pb-4 border-b border-[#E6DFD5]">
-                <span>Author: {activeArticle.author}</span>
-                <span>•</span>
-                <span>Published: {activeArticle.publishedAt}</span>
-              </div>
-
-              <img
-                src={activeArticle.featuredImage}
-                alt={activeArticle.title}
-                className="w-full aspect-video object-cover rounded-sm mb-6 border border-[#E6DFD5]"
-              />
-
-              <div className="prose text-xs sm:text-sm text-[#1B201E] leading-relaxed space-y-4">
-                <p className="font-medium text-[#886938] italic text-sm">
-                  {activeArticle.excerpt}
-                </p>
-                <p>{activeArticle.content}</p>
-                <p>
-                  To experience this botanical mastery firsthand, explore our collection of pure Extrait de Parfum flacons or order the Imperial Discovery Wardrobe.
-                </p>
-              </div>
-
-              {activeArticle.youtubeUrl && (
-                <div className="mt-8 p-4 bg-[#FAF8F5] border border-[#E6DFD5] flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-[#12231A]">
-                    <Youtube className="w-5 h-5 text-[#12231A]" />
-                    <span>Watch Full Distillation Video on YouTube</span>
-                  </div>
-                  <a
-                    href={activeArticle.youtubeUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="px-4 py-2 bg-[#12231A] text-[#DFCAAB] text-xs font-semibold uppercase tracking-wider"
-                  >
-                    Watch Now
-                  </a>
+              <div className="max-w-2xl mx-auto">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-[10px] tracking-[0.25em] uppercase font-bold text-[#886938] bg-[#FAF8F5] px-2.5 py-1 border border-[#E6DFD5] rounded-sm">
+                    {activeArticle.category}
+                  </span>
+                  <span className="text-[11px] text-[#717A75] font-mono flex items-center gap-1">
+                    <Clock className="w-3 h-3 text-[#C5A880]" />
+                    {activeArticle.readTime}
+                  </span>
                 </div>
-              )}
+
+                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-[#12231A] mb-4 leading-tight">
+                  {activeArticle.title}
+                </h2>
+
+                <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-[#717A75] pb-5 border-b border-[#E6DFD5] mb-6">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-full bg-[#12231A] text-[#DFCAAB] text-[10px] font-serif font-bold flex items-center justify-center">
+                      {activeArticle.author.charAt(0)}
+                    </div>
+                    <div>
+                      <span className="font-semibold text-[#12231A] block">{activeArticle.author}</span>
+                      <span className="text-[10px] text-[#886938]">Master Perfumer & Botanical Historian</span>
+                    </div>
+                  </div>
+                  <div className="text-[11px] font-mono text-[#717A75]">
+                    Published: {activeArticle.publishedAt}
+                  </div>
+                </div>
+
+                <div className="relative aspect-[16/9] w-full overflow-hidden rounded-sm mb-6 border border-[#E6DFD5] bg-[#182F23]">
+                  <img
+                    src={activeArticle.featuredImage}
+                    alt={activeArticle.title}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute bottom-2 right-2 px-2 py-0.5 bg-black/70 backdrop-blur-sm text-white/90 text-[10px] font-mono">
+                    HIFFYY Botanical Archive
+                  </div>
+                </div>
+
+                <div className="prose text-xs sm:text-sm text-[#1B201E] leading-relaxed space-y-4">
+                  <p className="font-serif italic text-base sm:text-lg text-[#886938] leading-relaxed border-l-2 border-[#C5A880] pl-4 my-4">
+                    "{activeArticle.excerpt}"
+                  </p>
+                  <p className="first-letter:text-4xl first-letter:font-serif first-letter:font-bold first-letter:float-left first-letter:mr-2 first-letter:text-[#12231A]">
+                    {activeArticle.content}
+                  </p>
+                  <p>
+                    Every formulation honors ancient steam-distillation rituals handed down over five centuries. We source only wild-harvested botanicals from sustainable estates across the Indian subcontinent and Arabia.
+                  </p>
+                  <p>
+                    To experience this olfactory mastery firsthand, explore our collection of pure Extrait de Parfum flacons or acquire the Imperial Discovery Wardrobe.
+                  </p>
+                </div>
+
+                {/* YouTube Video Essay CTA if present */}
+                {activeArticle.youtubeUrl && (
+                  <div className="mt-8 p-4 bg-[#FAF8F5] border border-[#E6DFD5] rounded-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-2.5 text-xs font-semibold text-[#12231A]">
+                      <div className="w-8 h-8 rounded-full bg-red-600 text-white flex items-center justify-center shrink-0">
+                        <Youtube className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div>Visual Distillation Documentary</div>
+                        <div className="text-[10px] text-[#717A75] font-normal">Available in 4K Cinema Audio</div>
+                      </div>
+                    </div>
+                    <a
+                      href={activeArticle.youtubeUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-4 py-2 bg-[#12231A] text-[#DFCAAB] text-xs font-semibold uppercase tracking-wider rounded-sm hover:bg-[#182F23] text-center"
+                    >
+                      Watch Video Essay &rarr;
+                    </a>
+                  </div>
+                )}
+
+                <div className="mt-8 pt-6 border-t border-[#E6DFD5] flex items-center justify-between">
+                  <span className="text-[10px] uppercase font-bold text-[#717A75] tracking-wider">
+                    HIFFYY JOURNAL DISPATCH
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setActiveArticle(null)}
+                    className="px-5 py-2 bg-[#12231A] text-[#DFCAAB] text-xs uppercase font-bold tracking-wider hover:bg-[#182F23] cursor-pointer"
+                  >
+                    Close Article
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </section>
   );
 };

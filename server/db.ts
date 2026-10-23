@@ -329,6 +329,7 @@ const YoupiTransactionSchema = new mongoose.Schema(
     customerEmail: String,
     verifiedAt: Date,
     source: { type: String, default: 'upi_intent_or_qr' },
+    paymentMode: { type: String, default: 'UPI' },
   },
   { timestamps: true, strict: false }
 );

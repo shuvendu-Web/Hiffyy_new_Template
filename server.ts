@@ -833,7 +833,7 @@ app.post('/api/youpi/config', async (req, res) => {
 // 3. Create YouPI Payment Order (Initiates UPI Intent & Dynamic QR)
 app.post('/api/youpi/create-payment', async (req, res) => {
   try {
-    const { orderId, amount, customerName, customerPhone, customerEmail, description } = req.body;
+    const { orderId, amount, customerName, customerPhone, customerEmail, description, paymentMode } = req.body;
     if (!orderId || !amount) {
       return res.status(400).json({ error: 'orderId and amount are required' });
     }
@@ -878,6 +878,7 @@ app.post('/api/youpi/create-payment', async (req, res) => {
       customerName,
       customerPhone,
       customerEmail,
+      paymentMode: paymentMode || 'UPI',
       createdAt: new Date().toISOString(),
     };
 
@@ -960,6 +961,57 @@ app.post('/api/youpi/verify-utr', async (req, res) => {
       utr: cleanUtr,
       verifiedAt: new Date().toISOString(),
     });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// Update Transaction (Payment Mode, Status, UTR)
+app.post('/api/youpi/update-transaction', async (req, res) => {
+  try {
+    const { orderId, status, paymentMode, utr } = req.body;
+    if (!orderId) {
+      return res.status(400).json({ error: 'orderId is required' });
+    }
+
+    const memTx = inMemoryYoupiTransactions.find((t) => t.orderId === orderId);
+    if (memTx) {
+      if (status) memTx.status = status;
+      if (paymentMode) memTx.paymentMode = paymentMode;
+      if (utr) memTx.utr = utr;
+      if (status === 'VERIFIED' || status === 'PAID') {
+        memTx.verifiedAt = new Date().toISOString();
+      }
+    }
+
+    if (mongoose.connection.readyState === 1) {
+      const updateData: any = {};
+      if (status) updateData.status = status;
+      if (paymentMode) updateData.paymentMode = paymentMode;
+      if (utr) updateData.utr = utr;
+      if (status === 'VERIFIED' || status === 'PAID') {
+        updateData.verifiedAt = new Date();
+      }
+
+      await YoupiTransactionModel.findOneAndUpdate(
+        { orderId },
+        updateData,
+        { upsert: true, new: true }
+      );
+
+      if (status === 'VERIFIED' || status === 'PAID') {
+        await OrderModel.findOneAndUpdate(
+          { orderNumber: orderId },
+          {
+            paymentStatus: 'paid',
+            status: 'confirmed',
+            paymentMethod: paymentMode || 'UPI',
+          }
+        );
+      }
+    }
+
+    return res.json({ success: true, orderId, status, paymentMode, utr });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
