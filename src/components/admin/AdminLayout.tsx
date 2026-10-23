@@ -22,6 +22,7 @@ import {
   CheckCircle,
   Palette,
   QrCode,
+  Bot,
 } from 'lucide-react';
 
 
@@ -50,6 +51,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     { id: 'overview', label: 'Executive Overview', icon: LayoutDashboard },
     { id: 'orders', label: 'Orders & Fulfillment', icon: ShoppingBag, badge: pendingOrdersCount },
     { id: 'youpi-gateway', label: 'YouPI UPI Gateway (0% Fee)', icon: QrCode, highlight: true },
+    { id: 'ai-marketing', label: 'AI Marketing Suite (6 Agents)', icon: Bot, highlight: true },
     { id: 'products', label: 'Perfume Catalog', icon: Package },
     { id: 'hero-manager', label: 'Hero Section & Slides', icon: Sparkles, highlight: true },
     { id: 'brand-logos', label: 'Brand Assets & Favicon', icon: Palette, highlight: true },

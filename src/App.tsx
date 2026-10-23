@@ -42,6 +42,7 @@ import { StaffPermissions } from './components/admin/StaffPermissions';
 import { HeroSectionManager } from './components/admin/HeroSectionManager';
 import { BrandLogoManager } from './components/admin/BrandLogoManager';
 import { YoupiGatewayManager } from './components/admin/YoupiGatewayManager';
+import { AiMarketingEmployeesManager } from './components/admin/AiMarketingEmployeesManager';
 
 import { ArrowLeft, Sparkles, Store } from 'lucide-react';
 
@@ -98,6 +99,7 @@ const MainContent: React.FC = () => {
           {adminTab === 'overview' && <OverviewDashboard />}
           {adminTab === 'orders' && <OrderManager />}
           {adminTab === 'youpi-gateway' && <YoupiGatewayManager />}
+          {adminTab === 'ai-marketing' && <AiMarketingEmployeesManager />}
           {adminTab === 'products' && <ProductCatalogManager />}
           {adminTab === 'hero-manager' && <HeroSectionManager />}
           {adminTab === 'brand-logos' && <BrandLogoManager />}
